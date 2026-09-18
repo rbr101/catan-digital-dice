@@ -8,6 +8,14 @@
 #include <AceButton.h>
 using namespace ace_button;
 
+// Classic ESP32 (WROOM-32) has no esp_deep_sleep_enable_gpio_wakeup() - that API only
+// exists on chips with the newer "GPIO wakeup" hardware (C3/S3/C6). It has to use the
+// older ext0 wakeup on an RTC-capable GPIO instead, see enterDeepSleep() below.
+#if !defined(CONFIG_IDF_TARGET_ESP32C3) && !defined(CONFIG_IDF_TARGET_ESP32S3) && !defined(CONFIG_IDF_TARGET_ESP32C6)
+#include <driver/rtc_io.h>
+#define USE_EXT0_WAKEUP 1
+#endif
+
 TFT_eSPI tft = TFT_eSPI();
 Preferences prefs;
 esp_adc_cal_characteristics_t adc_chars;
@@ -129,7 +137,16 @@ void enterDeepSleep()
   // digitalWrite(DISPLAY_VCC_PIN, LOW);
   // digitalWrite(DISPLAY_BL_PIN, LOW);
   // Wakeup-source
+#if USE_EXT0_WAKEUP
+  // Classic ESP32: wake when BUTTON_PIN reads LOW. Requires BUTTON_PIN to be one of the
+  // RTC-capable GPIOs (0, 2, 4, 12-15, 25-27, 32-39) and the RTC pull-up re-armed here,
+  // since digital pinMode() pulls are not retained by the RTC domain during deep sleep.
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, 0);
+  rtc_gpio_pullup_en((gpio_num_t)BUTTON_PIN);
+  rtc_gpio_pulldown_dis((gpio_num_t)BUTTON_PIN);
+#else
   esp_deep_sleep_enable_gpio_wakeup((1ULL << BUTTON_PIN), ESP_GPIO_WAKEUP_GPIO_LOW);
+#endif
   esp_deep_sleep_start();
 }
 
