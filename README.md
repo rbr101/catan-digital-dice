@@ -108,6 +108,30 @@ No setup, no headaches.
 | `OUT–`     | GND (to buttons/distribution)  | Used as GND source and common ground distribution point               |
 
 ---
+### 🔌 Wiring Table – ESP32-WROOM-32 (breadboard, `esp32dev` env)
+
+Alternative build on a generic ESP32-WROOM-32 dev board (e.g. AZ-Delivery DevKit V4) with a
+1.3" 240×240 ST7789 SPI display, instead of the ESP32-C3 Super Mini enclosure above. Use
+`pio run -e esp32dev` to build/upload this variant. Buttons here have no LED, so the
+`BUTTON_LED_PIN`/`MENU_LED_PIN` GPIOs are defined in `platformio.ini` but left unconnected.
+
+| Component            | Connection To | Notes                                              |
+|-----------------------|---------------|-----------------------------------------------------|
+| Display SCLK          | `GPIO14`      |                                                       |
+| Display MOSI          | `GPIO4`       |                                                       |
+| Display DC            | `GPIO16`      |                                                       |
+| Display RST            | `GPIO13`      |                                                       |
+| Display Backlight      | `GPIO12`      |                                                       |
+| Display CS             | not wired     | Tied low on the panel's own breakout board            |
+| Display VCC / GND      | `3V3` / `GND` | Wired directly to the rail, not switched via GPIO     |
+| Main Button (switch)  | `GPIO32`      | Other leg to `GND`; triggers dice roll                |
+| Menu Button (switch)  | `GPIO25`      | Other leg to `GND`; opens settings/menu                |
+| Battery Voltage Divider (optional) | `GPIO34` | Only needed if you wire up a TP4056 + divider like the enclosure build |
+
+To change any of these, edit the matching `-D<NAME>=<gpio>` line in the `[env:esp32dev]`
+section of `platformio.ini`.
+
+---
 ## ⚙️ Technical Choices
 
 - **Microcontroller**: ESP32-C3 Super Mini – with ME6211 low dropout LDO, great for 3.7V Li-Ion batteries. The pin header layout of the ESP32-C3 Super Mini matches perfectly with the 1.77" TFT display, simplifying wiring and saving space.
