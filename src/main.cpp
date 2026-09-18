@@ -55,9 +55,13 @@ struct Dice
   DiceType type;
 };
 
-// Default Values
-const int twoDiceSize = 70;
-const int threeDiceSize = 50;
+// Default Values.
+// twoDiceSize/threeDiceSize are fallbacks for the RTC_DATA_ATTR init below (which needs
+// compile-time constants); computeDiceSizes() overwrites them in setup() once the real
+// panel resolution (tft.width()/tft.height()) is known, so the layout scales to whatever
+// display is connected (128x160 ST7735, 240x240 ST7789, ...).
+int twoDiceSize = 70;
+int threeDiceSize = 50;
 const int twoDiceDotSize = twoDiceSize / 10;
 RTC_DATA_ATTR Dice whiteDice = {TFT_WHITE, TFT_BLACK, 6, twoDiceSize, twoDiceDotSize, NUMBER};
 RTC_DATA_ATTR Dice redDice = {TFT_RED, TFT_WHITE, 6, twoDiceSize, twoDiceDotSize, NUMBER};
@@ -72,6 +76,14 @@ float_t batteryVoltage = 0;
 uint8_t batteryPercentage = 0;
 
 uint32_t lastButtonPress = 0;
+
+// Actual panel resolution, read from TFT_eSPI once tft.init()/setRotation() ran.
+// All layout math below uses these instead of hardcoded pixel values so the UI
+// works on both the original 128x160 display and the 240x240 replacement.
+int screenW = 0;
+int screenH = 0;
+const int statusBarHeight = 20; // reserved area at the top for the status line + battery icon
+const int diceMargin = 10;      // spacing between dice and between dice and screen edges
 
 // Array to store rolled dice statistics (indices 2-12)
 RTC_DATA_ATTR uint16_t diceStatistics[13] = {0};
@@ -92,6 +104,9 @@ void displayStatistics();
 void resetStatistics();
 void animateRoll(Dice *dice1, Dice *dice2, Dice *extra);
 void showDiceScreen();
+void computeDiceSizes();
+void getBaseDicePositions(int &x1, int &y1, int &x2, int &y2);
+void getExpansionDicePositions(int &x1, int &y1, int &x2, int &y2, int &x3, int &y3);
 void setTwoDiceNumbers(Dice *dice1, Dice *dice2, bool addToStatistics = true);
 void setCorrectDiceSize();
 void showMenuPage();
@@ -154,8 +169,14 @@ void setup(void)
   digitalWrite(DISPLAY_BL_PIN, HIGH); // BL
   delay(200);                         // Wait for the display to power up
   tft.init();
-  tft.setRotation(3);
+  tft.setRotation(3); // landscape; adjust 0-3 if the new panel sits rotated in the housing
   tft.fillScreen(TFT_BLACK);
+
+  // Read the real panel size so the dice/menu layout scales to whichever
+  // display is wired up, instead of assuming the original 128x160 panel.
+  screenW = tft.width();
+  screenH = tft.height();
+  computeDiceSizes();
 
   setMenuButtonLed(1);
   setCorrectDiceSize();
@@ -276,6 +297,44 @@ void drawBatteryIcon(int x, int y, uint8_t percentage)
   tft.fillRect(x + 2, y + 2, fill, h - 4, fillColor);
 }
 
+// Recomputes dice sizes so two (BASE) or three (expansion) dice always fit the
+// screen, however big or small it is. Called once at boot after the panel's
+// real width/height are known.
+void computeDiceSizes()
+{
+  int usableHeight = screenH - statusBarHeight - diceMargin;
+
+  // BASE mode: two dice side by side.
+  int twoDiceFromWidth = (screenW - 3 * diceMargin) / 2;
+  twoDiceSize = min(usableHeight, twoDiceFromWidth);
+
+  // Expansion modes: two dice on a top row, one centered below.
+  int threeDiceFromWidth = (screenW - 3 * diceMargin) / 2;
+  int threeDiceFromHeight = (usableHeight - diceMargin) / 2;
+  threeDiceSize = min(threeDiceFromWidth, threeDiceFromHeight);
+}
+
+// Centered side-by-side layout for the two number dice in BASE mode.
+void getBaseDicePositions(int &x1, int &y1, int &x2, int &y2)
+{
+  int totalWidth = 2 * twoDiceSize + diceMargin;
+  x1 = (screenW - totalWidth) / 2;
+  x2 = x1 + twoDiceSize + diceMargin;
+  y1 = y2 = statusBarHeight + (screenH - statusBarHeight - twoDiceSize) / 2;
+}
+
+// Layout for the expansion modes: two number dice on top, the extra
+// (color/castle) die centered below them.
+void getExpansionDicePositions(int &x1, int &y1, int &x2, int &y2, int &x3, int &y3)
+{
+  int totalWidthTop = 2 * threeDiceSize + diceMargin;
+  x1 = (screenW - totalWidthTop) / 2;
+  x2 = x1 + threeDiceSize + diceMargin;
+  y1 = y2 = statusBarHeight + diceMargin;
+  x3 = (screenW - threeDiceSize) / 2;
+  y3 = y1 + threeDiceSize + diceMargin;
+}
+
 void showDiceScreen()
 {
   tft.fillScreen(TFT_BLACK);
@@ -283,20 +342,26 @@ void showDiceScreen()
 
   if (gameVariant == BASE)
   {
-    drawSingleDice(5, 30, whiteDice);
-    drawSingleDice(85, 30, redDice);
+    int x1, y1, x2, y2;
+    getBaseDicePositions(x1, y1, x2, y2);
+    drawSingleDice(x1, y1, whiteDice);
+    drawSingleDice(x2, y2, redDice);
   }
   else if (gameVariant == TRADERS_AND_BARBARIANS)
   {
-    drawSingleDice(20, 20, whiteDice);
-    drawSingleDice(95, 20, redDice);
-    drawSingleDice(55, 75, colorDice);
+    int x1, y1, x2, y2, x3, y3;
+    getExpansionDicePositions(x1, y1, x2, y2, x3, y3);
+    drawSingleDice(x1, y1, whiteDice);
+    drawSingleDice(x2, y2, redDice);
+    drawSingleDice(x3, y3, colorDice);
   }
   else if (gameVariant == CITIES_AND_KNIGHTS)
   {
-    drawSingleDice(20, 20, whiteDice);
-    drawSingleDice(95, 20, redDice);
-    drawSingleDice(55, 75, castleDice);
+    int x1, y1, x2, y2, x3, y3;
+    getExpansionDicePositions(x1, y1, x2, y2, x3, y3);
+    drawSingleDice(x1, y1, whiteDice);
+    drawSingleDice(x2, y2, redDice);
+    drawSingleDice(x3, y3, castleDice);
   }
   setMainButtonLed(1);
 }
@@ -305,7 +370,7 @@ void animateRoll(Dice *dice1, Dice *dice2, Dice *extra)
 {
   for (int i = 0; i < 10; i++)
   {
-    tft.fillRect(0, 15, 260, 128 - 15, TFT_BLACK);
+    tft.fillRect(0, statusBarHeight, screenW, screenH - statusBarHeight, TFT_BLACK);
 
     int offsetX = random(-5, 5);
     int offsetY = random(-5, 5);
@@ -318,14 +383,18 @@ void animateRoll(Dice *dice1, Dice *dice2, Dice *extra)
 
     if (gameVariant == BASE)
     {
-      drawSingleDice(5 + offsetX, 30 + offsetY, *dice1);
-      drawSingleDice(85 - offsetX, 30 - offsetY, *dice2);
+      int x1, y1, x2, y2;
+      getBaseDicePositions(x1, y1, x2, y2);
+      drawSingleDice(x1 + offsetX, y1 + offsetY, *dice1);
+      drawSingleDice(x2 - offsetX, y2 - offsetY, *dice2);
     }
     else if (gameVariant == TRADERS_AND_BARBARIANS || gameVariant == CITIES_AND_KNIGHTS)
     {
-      drawSingleDice(20 + offsetX, 20 + offsetY, *dice1);
-      drawSingleDice(95 + offsetX, 20 + offsetY, *dice2);
-      drawSingleDice(55 + offsetX, 75 + offsetY, *extra);
+      int x1, y1, x2, y2, x3, y3;
+      getExpansionDicePositions(x1, y1, x2, y2, x3, y3);
+      drawSingleDice(x1 + offsetX, y1 + offsetY, *dice1);
+      drawSingleDice(x2 + offsetX, y2 + offsetY, *dice2);
+      drawSingleDice(x3 + offsetX, y3 + offsetY, *extra);
     }
     delay(100);
   }
@@ -450,9 +519,10 @@ void drawMenuOption(int y, const char *label, const char *description, bool sele
 
   // Beschreibung
   tft.setTextColor(TFT_SKYBLUE);
-  const int maxCharsPerLine = 22;
-  int descY = y + 12;
   int indentX = x + 12;
+  const int approxCharWidthPx = 6; // rough glyph width at text size 1 / font 1
+  int maxCharsPerLine = (screenW - indentX - x) / approxCharWidthPx;
+  int descY = y + 12;
 
   size_t len = strlen(description);
   if (len > maxCharsPerLine)
@@ -482,7 +552,7 @@ void drawMenuOption(int y, const char *label, const char *description, bool sele
     // Trennlinie darunter
     if (drawLineBelow)
     {
-      tft.drawLine(x, y + 32, 160 - x, y + 32, TFT_DARKGREY);
+      tft.drawLine(x, y + 32, screenW - x, y + 32, TFT_DARKGREY);
     }
   }
   else
@@ -492,7 +562,7 @@ void drawMenuOption(int y, const char *label, const char *description, bool sele
     // Trennlinie darunter
     if (drawLineBelow)
     {
-      tft.drawLine(x, y + 26, 160 - x, y + 26, TFT_DARKGREY);
+      tft.drawLine(x, y + 26, screenW - x, y + 26, TFT_DARKGREY);
     }
   }
 }
@@ -587,7 +657,7 @@ void displayStatus()
   // tft.setTextColor(TFT_YELLOW, TFT_BLACK);
   // tft.print(batteryPercentage);
   // tft.print("% ");
-  drawBatteryIcon(135, 2, batteryPercentage);
+  drawBatteryIcon(screenW - 25, 2, batteryPercentage); // 25 = icon width (20) + pin (2) + margin
 }
 
 void drawDot(int x, int y, Dice dice)
