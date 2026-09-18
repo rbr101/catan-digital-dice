@@ -186,7 +186,7 @@ void setup(void)
   digitalWrite(DISPLAY_BL_PIN, HIGH); // BL
   delay(200);                         // Wait for the display to power up
   tft.init();
-  tft.setRotation(3); // landscape; adjust 0-3 if the new panel sits rotated in the housing
+  tft.setRotation(1); // matches the esphome config's "rotation: 90" for this panel; adjust 0-3 if it looks rotated
   tft.fillScreen(TFT_BLACK);
 
   // Read the real panel size so the dice/menu layout scales to whichever
