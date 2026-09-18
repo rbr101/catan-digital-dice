@@ -1,0 +1,455 @@
+/* Root CSS variables for responsive hex sizing */
+:root {
+  /* The widest row in extension mode has 6.5 hexes */
+  --max-hex-count: 6.5;
+  /* Any horizontal padding for the board (total, e.g., left + right) */
+  --board-padding: 20px;
+  /* Fixed horizontal margin per side on each hex */
+  --hex-horizontal-margin: 3px;
+  /* Extra space taken up by horizontal margins:
+     Each hex contributes 2*margin, so for 6.5 hexes: 6.5 * (2 * 3px) = 39px */
+  --hex-extra-space: calc(var(--max-hex-count) * 2 * var(--hex-horizontal-margin));
+  /* Calculate hex size:
+     Use the smaller of viewport width and 600px,
+     subtract the board padding and extra space from margins,
+     then divide by the number of hexes in the widest row.
+     Clamp to a minimum of 40px and a maximum of 100px. */
+  --hex-size: clamp(20px, calc((min(100vw, 600px) - var(--board-padding) - var(--hex-extra-space)) / var(--max-hex-count)), 100px);
+}
+
+/* Basic page styling */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header and paragraph styling */
+h1,
+p {
+  margin: 20px;
+}
+
+/* Top buttons container styling */
+.top-buttons {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+/* Default button styling */
+button {
+  font-size: 16px;
+  padding: 10px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background: #2f74c0;
+  color: #fff;
+}
+
+/* Button hover effect */
+button:hover {
+  background: #1f4e80;
+}
+
+/* Settings gear button style */
+.gear-button {
+  background-color: #990000;
+  border: none;
+  padding: 10px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+/* Board layout container */
+.board-wrapper {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  text-align: center;
+  overflow-x: hidden;
+}
+
+/* Board itself */
+.board {
+  display: inline-block;
+  margin: 20px auto;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Row of hexes */
+.row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0px 0;
+}
+
+/* Hexagon tile styling */
+.hex {
+  width: var(--hex-size);
+  height: var(--hex-size);
+  /* Creates the hexagon shape */
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: calc(var(--hex-size) / 5);
+  font-weight: bold;
+  /* Vertical overlap to create proper hex grid */
+  margin: calc(-0.18 * var(--hex-size)) var(--hex-horizontal-margin) 0 var(--hex-horizontal-margin);
+  color: #333;
+}
+
+/* Resource color classes for hex tiles */
+.sheep {
+  background-color: #90EE90;
+  /* Light green */
+}
+
+.ore {
+  background-color: #D3D3D3;
+  /* Light gray */
+}
+
+.brick {
+  background-color: #B22222;
+  /* Firebrick red */
+}
+
+.wheat {
+  background-color: #FFD700;
+  /* Gold */
+}
+
+.wood {
+  background-color: #006400;
+  /* Dark green */
+}
+
+.desert {
+  background-color: #F0E68C;
+  /* Khaki */
+}
+
+/* Text color classes for numbers */
+.red {
+  color: red;
+}
+
+.black {
+  color: rgb(0, 0, 0);
+}
+
+/* Offset classes for proper hex grid alignment */
+/* Shift the row right by half a hexagon's width */
+.row.offsetRight {
+  transform: translateX(calc(0.275 * var(--hex-size)));
+}
+
+/* Shift the row left by half a hexagon's width */
+.row.offsetLeft {
+  transform: translateX(calc(-0.275 * var(--hex-size)));
+}
+
+/* Start/End game button styling */
+.start-game-btn {
+  font-size: 16px;
+  padding: 10px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background: #28a745;
+  color: #fff;
+  margin-bottom: 10px;
+}
+
+.start-game-btn:hover {
+  background: #218838;
+}
+
+/* Number Buttons layout (2..12) */
+#numberButtons {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: stretch;
+  margin-bottom: 30px;
+}
+
+/* Grid for the two rows of smaller buttons */
+#numberButtonsRows {
+  display: grid;
+  grid-template-rows: repeat(2, auto);
+  gap: 5px;
+}
+
+/* Horizontal rows of number buttons */
+.number-row {
+  display: flex;
+  gap: 5px;
+}
+
+/* Special large button for number 7 */
+#bigSeven {
+  width: 80px;
+  height: 87px;
+  margin: 2px;
+  grid-column: 2;
+  /* Force it into the second column */
+  grid-row: 1 / span 2;
+  /* Spans both rows */
+  font-size: 1.5em;
+  /* Larger font size */
+  padding: 0px;
+}
+
+/* Small number buttons */
+.small-button button {
+  width: 40px;
+  margin: 2px;
+  border-radius: 4px;
+}
+
+/* Hover effect for number buttons (only on devices with hover capability) */
+@media (hover: hover) and (pointer: fine) {
+  #numberButtons button:hover {
+    background: #333;
+  }
+}
+
+/* Color styling for small buttons when selected (red) or not (black) */
+#numberButtonsRows button.red {
+  background: red;
+  color: #fff;
+}
+
+#numberButtonsRows button.black {
+  background: #555;
+  color: #fff;
+}
+
+/* Color styling for big 7 button when selected (red) or not (black) */
+#bigSeven.red {
+  background: red;
+  color: #fff;
+}
+
+#bigSeven.black {
+  background: #555;
+  color: #fff;
+}
+
+/* Modal dialog for Settings */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  /* Semi-transparent background */
+}
+
+.modal-content {
+  position: relative;
+  background-color: #fff;
+  margin: 5vh auto;
+  padding: 20px;
+  border-radius: 5px;
+  width: 90%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.close-btn {
+  margin-top: 20px;
+  background: #eee;
+  color: #333;
+  border: none;
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+/* Toggle switch styling */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 24px;
+  margin-right: 10px;
+  vertical-align: middle;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 34px;
+}
+
+/* Slider's circular button */
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+/* Styles for when toggle is checked (on) */
+input:checked+.slider {
+  background-color: #2196F3;
+}
+
+input:checked+.slider:before {
+  transform: translateX(18px);
+}
+
+/* Toggle label text */
+.toggle-label {
+  vertical-align: middle;
+  font-size: 14px;
+}
+
+/* Home Assistant settings fields */
+.settings-field-label {
+  display: block;
+  font-size: 13px;
+  color: #555;
+  margin-top: 8px;
+}
+
+.settings-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px;
+  margin-top: 2px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+/* Saved boards list */
+.save-board-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.save-board-row .settings-input {
+  width: auto;
+  flex: 1;
+  margin-top: 0;
+}
+
+.saved-boards-list {
+  list-style: none;
+  margin: 10px 0 0 0;
+  padding: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.saved-boards-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 14px;
+}
+
+.saved-boards-list li .saved-board-actions button {
+  font-size: 13px;
+  padding: 5px 8px;
+  margin-left: 6px;
+}
+
+.saved-boards-list li .saved-board-actions .delete-board-btn {
+  background: #b22222;
+}
+
+.saved-boards-list li .saved-board-actions .delete-board-btn:hover {
+  background: #8a1a1a;
+}
+
+.saved-boards-empty {
+  font-size: 13px;
+  color: #888;
+  margin-top: 8px;
+}
+
+.ha-config-status {
+  font-size: 13px;
+  margin-left: 8px;
+  color: #2e7d32;
+}
+
+/* LED board settings */
+.settings-range {
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 4px;
+}
+
+.color-picker-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.color-picker-row label {
+  font-size: 14px;
+  color: #333;
+}
+
+.color-picker-row input[type="color"] {
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Disabled button styling */
+button:disabled {
+  background-color: #ccc;
+  /* light grey */
+  color: #888;
+  /* muted text */
+  cursor: not-allowed;
+  /* shows a not-allowed cursor */
+}

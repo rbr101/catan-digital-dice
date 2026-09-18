@@ -1,0 +1,199 @@
+<!DOCTYPE HTML>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Catan Board Generator</title>
+  <!-- Include Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <!-- Include main CSS file -->
+  <link rel="stylesheet" type="text/css" href="/css/main.css">
+</head>
+
+<body>
+  <h1>Catan Board Game Generator</h1>
+  <p>Choose Classic or Extension.</p>
+
+  <!-- Top button bar containing mode selectors, settings and dice buttons -->
+  <div class="top-buttons">
+    <!-- Mode selection buttons -->
+    <button id="classicBtn" onclick="setClassic()">Classic</button>
+    <button id="extensionBtn" onclick="setExtension()">Extension</button>
+    <!-- Settings button with gear icon -->
+    <button class="gear-button" id="openSettingsBtn">
+      <i class="fas fa-cog"></i>
+    </button>
+    <!-- Dice roll button (hidden initially, shown during gameplay) -->
+    <button id="diceRollButton" class="dice-roll-btn" style="display:none;" onclick="rollDice()">
+      <i class="fa-solid fa-dice"></i>
+    </button>
+  </div>
+
+  <!-- Main board container -->
+  <div class="board-wrapper">
+    <div class="board" id="board"></div>
+  </div>
+
+  <!-- Start/End Game button - text changes based on game state -->
+  <button class="start-game-btn" onclick="startGame()">Start Game</button>
+
+  <!-- Number selection buttons (initially hidden, shown during gameplay) -->
+  <div id="numberButtons" style="display:none;">
+    <div id="numberButtonsRows">
+      <!-- First row of number buttons (2-6) -->
+      <div class="number-row small-button">
+        <button onclick="selectNumber(2)">2</button>
+        <button onclick="selectNumber(3)">3</button>
+        <button onclick="selectNumber(4)">4</button>
+        <button onclick="selectNumber(5)">5</button>
+        <button onclick="selectNumber(6)">6</button>
+      </div>
+      <!-- Second row of number buttons (8-12) -->
+      <div class="number-row small-button">
+        <button onclick="selectNumber(8)">8</button>
+        <button onclick="selectNumber(9)">9</button>
+        <button onclick="selectNumber(10)">10</button>
+        <button onclick="selectNumber(11)">11</button>
+        <button onclick="selectNumber(12)">12</button>
+      </div>
+    </div>
+    <!-- Special large button for 7 (robber) -->
+    <button id="bigSeven" onclick="selectNumber(7)">7</button>
+  </div>
+
+  <!-- Settings Modal Dialog -->
+  <div id="settingsModal" class="modal">
+    <div class="modal-content">
+      <h2>Settings</h2>
+
+      <!-- Toggle for "6 & 8 Can Touch" rule -->
+      <label class="switch">
+        <input type="checkbox" id="option1" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">6 & 8 Can Touch</span>
+      <br><br>
+
+      <!-- Toggle for "2 & 12 Can Touch" rule -->
+      <label class="switch">
+        <input type="checkbox" id="option2" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">2 & 12 Can Touch</span>
+      <br><br>
+
+      <!-- Toggle for "Same Numbers Can Touch" rule -->
+      <label class="switch">
+        <input type="checkbox" id="option3" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Same Numbers Can Touch</span>
+      <br><br>
+
+      <!-- Toggle for "Same Resources Can Touch" rule -->
+      <label class="switch">
+        <input type="checkbox" id="option4" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Same Resource Can Touch</span>
+      <br><br>
+
+      <!-- Toggle for "Manual Dice" feature -->
+      <label class="switch">
+        <input type="checkbox" id="option5" checked>
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Allow Manual Dice</span>
+      <br><br>
+
+      <hr>
+
+      <!-- Saved board library: save the current board under a name, and
+           reload any previously saved board later -->
+      <h3>Saved Boards</h3>
+
+      <div class="save-board-row">
+        <input type="text" id="saveBoardName" class="settings-input" placeholder="Board name">
+        <button id="saveBoardBtn">Save Current Board</button>
+      </div>
+      <span id="saveBoardStatus" class="ha-config-status"></span>
+
+      <ul id="savedBoardsList" class="saved-boards-list"></ul>
+
+      <hr>
+
+      <!-- LED board display settings -->
+      <h3>LED Board</h3>
+
+      <label class="settings-field-label" for="ledBrightness">Brightness (<span id="ledBrightnessValue">80</span>)</label>
+      <input type="range" id="ledBrightness" min="0" max="255" class="settings-range">
+      <br><br>
+
+      <div class="color-picker-row">
+        <label for="colorSheep">Sheep</label>
+        <input type="color" id="colorSheep">
+      </div>
+      <div class="color-picker-row">
+        <label for="colorWood">Wood</label>
+        <input type="color" id="colorWood">
+      </div>
+      <div class="color-picker-row">
+        <label for="colorWheat">Wheat</label>
+        <input type="color" id="colorWheat">
+      </div>
+      <div class="color-picker-row">
+        <label for="colorBrick">Brick</label>
+        <input type="color" id="colorBrick">
+      </div>
+      <div class="color-picker-row">
+        <label for="colorOre">Ore</label>
+        <input type="color" id="colorOre">
+      </div>
+      <div class="color-picker-row">
+        <label for="colorDesert">Desert (no number)</label>
+        <input type="color" id="colorDesert">
+      </div>
+      <br>
+
+      <button id="saveLedConfigBtn">Save LED Settings</button>
+      <span id="ledConfigStatus" class="ha-config-status"></span>
+      <br><br>
+
+      <hr>
+
+      <!-- Home Assistant integration settings -->
+      <h3>Home Assistant</h3>
+
+      <label class="switch">
+        <input type="checkbox" id="haEnabled">
+        <span class="slider"></span>
+      </label>
+      <span class="toggle-label">Enable Integration</span>
+      <br><br>
+
+      <label class="settings-field-label" for="haHost">Host / IP</label>
+      <input type="text" id="haHost" class="settings-input" placeholder="homeassistant.local">
+      <br>
+
+      <label class="settings-field-label" for="haPort">Port</label>
+      <input type="number" id="haPort" class="settings-input" placeholder="8123">
+      <br>
+
+      <label class="settings-field-label" for="haToken">Access Token</label>
+      <input type="password" id="haToken" class="settings-input" placeholder="Long-lived access token">
+      <br><br>
+
+      <button id="saveHaConfigBtn">Save Home Assistant Settings</button>
+      <span id="haConfigStatus" class="ha-config-status"></span>
+      <br><br>
+
+      <!-- Close button for the settings modal -->
+      <button class="close-btn" id="closeSettingsBtn">Close</button>
+    </div>
+  </div>
+  <!-- Include the JavaScript file -->
+  <script src="/js/scripts.js"></script>
+</body>
+
+</html>

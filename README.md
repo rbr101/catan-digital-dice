@@ -146,6 +146,24 @@ rate, so `[env:esp32dev]` sets `upload_speed = 115200`. If `pio run -e esp32dev 
 still fails to connect, hold the board's **BOOT** button, tap **EN/RESET** once while still
 holding BOOT, then start the upload while continuing to hold BOOT until it starts writing.
 
+**This build also includes the [smart-catan](https://github.com/rbr101/smart-catan) LED
+board/web app** (`-DSMART_CATAN=1`), so the same chip runs both the physical dice and the
+WS2812B LED board + web interface:
+
+- Needs `include/password.h` with your WiFi (and optionally Home Assistant) credentials -
+  gitignored here, copy it from the smart-catan project or create it following that
+  project's README.
+- The WS2812B data line goes on **GPIO21**, not GPIO4 - GPIO4 is this board's TFT MOSI
+  pin (`-DLED_STRIP_PIN` in `[env:esp32dev]`).
+- Also upload the web UI files once with `pio run -e esp32dev -t uploadfs` (SPIFFS), in
+  addition to the normal firmware upload.
+- Deep sleep/power-saving is disabled for this env (`SMART_CATAN` skips it in `loop()`),
+  since the board needs to stay reachable over WiFi. This build expects continuous
+  power (USB/mains), not battery-only operation.
+- Pressing the physical roll button also updates the LED board and (if enabled) fires
+  the Home Assistant webhook, same as the web UI's "Roll Dice" - but only in BASE mode;
+  the Cities & Knights/Traders & Barbarians expansion dice have no LED-board equivalent.
+
 ---
 ## ⚙️ Technical Choices
 

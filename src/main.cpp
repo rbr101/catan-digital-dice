@@ -8,6 +8,10 @@
 #include <AceButton.h>
 using namespace ace_button;
 
+#ifdef SMART_CATAN
+#include "smart_catan.h"
+#endif
+
 // Classic ESP32 (WROOM-32) has no esp_deep_sleep_enable_gpio_wakeup() - that API only
 // exists on chips with the newer "GPIO wakeup" hardware (C3/S3/C6). It has to use the
 // older ext0 wakeup on an RTC-capable GPIO instead, see enterDeepSleep() below.
@@ -223,6 +227,10 @@ void setup(void)
   setCorrectDiceSize();
   showDiceScreen();
 
+#ifdef SMART_CATAN
+  smartCatanSetup();
+#endif
+
   lastButtonPress = millis();
 }
 
@@ -248,6 +256,9 @@ void loop()
     lastMenuRaw = menuRaw;
   }
 #endif
+#ifdef SMART_CATAN
+  smartCatanLoop();
+#endif
   button.check();
   menuButton.check();
   // Battery check
@@ -257,13 +268,16 @@ void loop()
     batteryPercentage = voltageToPercentage(batteryVoltage);
     lastBatteryCheck = millis();
   }
-  // Power saving
+#ifndef SMART_CATAN
+  // Power saving: skipped when SMART_CATAN is built in, since that keeps
+  // WiFi/the web server/LED board running and reachable at all times.
   if ((powerSaveMode == AFTER_5_MIN && millis() - lastButtonPress > 5 * 60 * 1000) ||
       (powerSaveMode == AFTER_10_MIN && millis() - lastButtonPress > 10 * 60 * 1000))
   {
     delay(100);
     enterDeepSleep();
   }
+#endif
 }
 
 void loadSettings()
@@ -480,6 +494,16 @@ void rollDice()
   }
 
   showDiceScreen();
+
+#ifdef SMART_CATAN
+  // Mirror the roll onto the LED board/Home Assistant, same as the web UI's
+  // "Roll Dice" button. The expansion dice (color/castle) have no LED-board
+  // equivalent, so only the BASE variant's two-dice total is forwarded.
+  if (gameVariant == BASE)
+  {
+    notifySmartCatanRoll(whiteDice.number + redDice.number);
+  }
+#endif
 }
 
 void handleButton(AceButton *button, uint8_t eventType, uint8_t /*buttonState*/)
