@@ -114,11 +114,12 @@ Alternative build on a generic ESP32-WROOM-32 dev board (e.g. AZ-Delivery DevKit
 1.3" 240×240 ST7789 SPI display, instead of the ESP32-C3 Super Mini enclosure above. Use
 `pio run -e esp32dev` to build/upload this variant.
 
-The buttons here are 3-pin modules (`+` / `GND` / `IO`), not bare 2-pin switches, and have
-no LED, so the `BUTTON_LED_PIN`/`MENU_LED_PIN` GPIOs are defined in `platformio.ini` but
-left unconnected. These modules idle LOW and drive their `IO` pin HIGH when pressed (the
-opposite of the enclosure build's switch-to-GND wiring), which is why this env also sets
-`-DBUTTON_ACTIVE_HIGH=1` - remove that flag if your buttons behave the other way around.
+The buttons here are 3-pin capacitive touch modules (e.g. TTP223, `+` / `GND` / `IO`), not
+bare 2-pin switches, and have no LED, so the `BUTTON_LED_PIN`/`MENU_LED_PIN` GPIOs are
+defined in `platformio.ini` but left unconnected. These modules idle LOW and drive their
+`IO` pin HIGH when touched (the opposite of the enclosure build's switch-to-GND wiring),
+which is why this env also sets `-DBUTTON_ACTIVE_HIGH=1` - remove that flag if your buttons
+behave the other way around.
 
 | Component               | Connection To | Notes                                                    |
 |--------------------------|---------------|------------------------------------------------------------|
@@ -129,16 +130,21 @@ opposite of the enclosure build's switch-to-GND wiring), which is why this env a
 | Display Backlight        | `GPIO12`      |                                                              |
 | Display CS               | not wired     | Tied low on the panel's own breakout board                  |
 | Display VCC / GND        | `3V3` / `GND` | Wired directly to the rail, not switched via GPIO            |
-| Main Button `+`          | `3V3`         |                                                              |
-| Main Button `GND`        | `GND`         |                                                              |
-| Main Button `IO`         | `GPIO32`      | Triggers dice roll                                           |
-| Menu Button `+`          | `3V3`         |                                                              |
-| Menu Button `GND`        | `GND`         |                                                              |
-| Menu Button `IO`         | `GPIO25`      | Opens settings/menu                                          |
+| Main Touch Button `+`    | `3V3`         |                                                              |
+| Main Touch Button `GND`  | `GND`         |                                                              |
+| Main Touch Button `IO`   | `GPIO32`      | Triggers dice roll                                           |
+| Menu Touch Button `+`    | `3V3`         |                                                              |
+| Menu Touch Button `GND`  | `GND`         |                                                              |
+| Menu Touch Button `IO`   | `GPIO25`      | Opens settings/menu                                          |
 | Battery Voltage Divider (optional) | `GPIO34` | Only needed if you wire up a TP4056 + divider like the enclosure build |
 
 To change any of these, edit the matching `-D<NAME>=<gpio>` line in the `[env:esp32dev]`
 section of `platformio.ini`.
+
+**Flashing this board:** its USB-serial link has been unreliable at the default upload baud
+rate, so `[env:esp32dev]` sets `upload_speed = 115200`. If `pio run -e esp32dev -t upload`
+still fails to connect, hold the board's **BOOT** button, tap **EN/RESET** once while still
+holding BOOT, then start the upload while continuing to hold BOOT until it starts writing.
 
 ---
 ## ⚙️ Technical Choices
