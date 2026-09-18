@@ -35,13 +35,17 @@ const uint8_t buttonIdleState = HIGH;
 
 TFT_eSPI tft = TFT_eSPI();
 Preferences prefs;
+#ifndef SMART_CATAN
 esp_adc_cal_characteristics_t adc_chars;
+#endif
 
 AceButton button;
 AceButton menuButton;
 
+#ifndef SMART_CATAN
 #define R1 51000.0
 #define R2 51000.0
+#endif
 
 enum DiceMode
 {
@@ -95,10 +99,12 @@ RTC_DATA_ATTR Dice colorDice = {TFT_WHITE, TFT_BLACK, 6, threeDiceSize, threeDic
 DiceMode diceMode = REALISTIC;
 GameVariant gameVariant = BASE;
 PowerSaveMode powerSaveMode = AFTER_10_MIN;
+#ifndef SMART_CATAN
 uint32_t lastBatteryCheck = 0;
 uint16_t batteryCheckInterval = 10000; // 10 seconds
 float_t batteryVoltage = 0;
 uint8_t batteryPercentage = 0;
+#endif
 
 uint32_t lastButtonPress = 0;
 
@@ -136,9 +142,11 @@ void setTwoDiceNumbers(Dice *dice1, Dice *dice2, bool addToStatistics = true);
 void setCorrectDiceSize();
 void showMenuPage();
 void drawMenuOption(int y, const char *label, const char *description, bool selected, bool drawLineBelow = true);
+#ifndef SMART_CATAN
 float readBatteryVoltage();
 int voltageToPercentage(float voltage);
 void drawBatteryIcon(int x, int y, uint8_t percentage);
+#endif
 void loadSettings();
 void saveSettings();
 void setMainButtonLed(bool state)
@@ -195,12 +203,15 @@ void setup(void)
   button.getButtonConfig()->setFeature(AceButton::kEventLongPressed);
   button.getButtonConfig()->setClickDelay(500);
 
-  // Battery state // ADC-Kalibrierung
+#ifndef SMART_CATAN
+  // Battery state // ADC-Kalibrierung. Skipped under SMART_CATAN: that build
+  // is always USB/mains-powered, no battery/voltage divider fitted.
   analogReadResolution(12); // 12-Bit-Resolution
   esp_adc_cal_characterize(ADC_UNIT_1, ADC_ATTEN_DB_11, ADC_WIDTH_BIT_12, 1100, &adc_chars);
   batteryVoltage = readBatteryVoltage();
   batteryPercentage = voltageToPercentage(batteryVoltage);
   lastBatteryCheck = millis();
+#endif
 
   // load settings
   loadSettings();
@@ -261,16 +272,16 @@ void loop()
 #endif
   button.check();
   menuButton.check();
-  // Battery check
+#ifndef SMART_CATAN
+  // Battery check and power saving: both skipped when SMART_CATAN is built
+  // in, since that build is always USB/mains-powered (no battery fitted)
+  // and keeps WiFi/the web server/LED board reachable at all times.
   if (millis() - lastBatteryCheck > batteryCheckInterval)
   {
     batteryVoltage = readBatteryVoltage();
     batteryPercentage = voltageToPercentage(batteryVoltage);
     lastBatteryCheck = millis();
   }
-#ifndef SMART_CATAN
-  // Power saving: skipped when SMART_CATAN is built in, since that keeps
-  // WiFi/the web server/LED board running and reachable at all times.
   if ((powerSaveMode == AFTER_5_MIN && millis() - lastButtonPress > 5 * 60 * 1000) ||
       (powerSaveMode == AFTER_10_MIN && millis() - lastButtonPress > 10 * 60 * 1000))
   {
@@ -314,6 +325,9 @@ void setCorrectDiceSize()
   }
 }
 
+// Battery voltage/percentage/icon: not compiled in under SMART_CATAN, which
+// is always USB/mains-powered with no battery or voltage divider fitted.
+#ifndef SMART_CATAN
 // convert battery voltage to percentage
 int voltageToPercentage(float voltage)
 {
@@ -369,6 +383,7 @@ void drawBatteryIcon(int x, int y, uint8_t percentage)
 
   tft.fillRect(x + 2, y + 2, fill, h - 4, fillColor);
 }
+#endif // SMART_CATAN
 
 // Recomputes dice sizes so two (BASE) or three (expansion) dice always fit the
 // screen, however big or small it is. Called once at boot after the panel's
@@ -736,11 +751,10 @@ void displayStatus()
     tft.print("Base");
     break;
   }
-  // tft.setCursor(135, 5);
-  // tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  // tft.print(batteryPercentage);
-  // tft.print("% ");
+#ifndef SMART_CATAN
+  // No battery icon under SMART_CATAN: that build is always USB/mains-powered.
   drawBatteryIcon(screenW - 25, 2, batteryPercentage); // 25 = icon width (20) + pin (2) + margin
+#endif
 }
 
 void drawDot(int x, int y, Dice dice)
