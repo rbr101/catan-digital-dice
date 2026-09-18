@@ -230,6 +230,24 @@ void loop()
 {
   // rollDice();
   // delay(30000);
+#ifdef BUTTON_DEBUG
+  // Temporary bring-up aid: prints raw pin levels on every change so button wiring/
+  // polarity issues can be diagnosed over serial. Remove BUTTON_DEBUG once confirmed working.
+  static int lastButtonRaw = -1;
+  static int lastMenuRaw = -1;
+  int buttonRaw = digitalRead(BUTTON_PIN);
+  int menuRaw = digitalRead(MENU_PIN);
+  if (buttonRaw != lastButtonRaw)
+  {
+    Serial.printf("BUTTON_PIN (GPIO%d) = %d\n", BUTTON_PIN, buttonRaw);
+    lastButtonRaw = buttonRaw;
+  }
+  if (menuRaw != lastMenuRaw)
+  {
+    Serial.printf("MENU_PIN (GPIO%d) = %d\n", MENU_PIN, menuRaw);
+    lastMenuRaw = menuRaw;
+  }
+#endif
   button.check();
   menuButton.check();
   // Battery check
