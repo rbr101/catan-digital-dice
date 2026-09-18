@@ -16,6 +16,19 @@ using namespace ace_button;
 #define USE_EXT0_WAKEUP 1
 #endif
 
+// The enclosure builds (esp32c3_supermini/firebeetle32) use bare 2-pin switches to GND,
+// idle pulled HIGH by the ESP32's internal pull-up. Some breadboard button modules
+// instead have their own VCC/GND/signal pins with an onboard pull-down, so the signal
+// idles LOW and goes HIGH when pressed - the opposite polarity. Define
+// BUTTON_ACTIVE_HIGH (see the esp32dev env in platformio.ini) for that kind of module.
+#ifdef BUTTON_ACTIVE_HIGH
+const uint8_t buttonPinMode = INPUT;   // module supplies its own pull-down
+const uint8_t buttonIdleState = LOW;   // idle/released level AceButton should expect
+#else
+const uint8_t buttonPinMode = INPUT_PULLUP;
+const uint8_t buttonIdleState = HIGH;
+#endif
+
 TFT_eSPI tft = TFT_eSPI();
 Preferences prefs;
 esp_adc_cal_characteristics_t adc_chars;
@@ -137,15 +150,26 @@ void enterDeepSleep()
   // digitalWrite(DISPLAY_VCC_PIN, LOW);
   // digitalWrite(DISPLAY_BL_PIN, LOW);
   // Wakeup-source
+  // Wake level must match buttonIdleState above: wake when the pin leaves its idle level.
 #if USE_EXT0_WAKEUP
-  // Classic ESP32: wake when BUTTON_PIN reads LOW. Requires BUTTON_PIN to be one of the
-  // RTC-capable GPIOs (0, 2, 4, 12-15, 25-27, 32-39) and the RTC pull-up re-armed here,
-  // since digital pinMode() pulls are not retained by the RTC domain during deep sleep.
-  esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, 0);
+  // Classic ESP32: requires BUTTON_PIN to be one of the RTC-capable GPIOs
+  // (0, 2, 4, 12-15, 25-27, 32-39), and the RTC pull re-armed here, since digital
+  // pinMode() pulls are not retained by the RTC domain during deep sleep.
+#ifdef BUTTON_ACTIVE_HIGH
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, 1); // wake on HIGH
+  rtc_gpio_pulldown_en((gpio_num_t)BUTTON_PIN);
+  rtc_gpio_pullup_dis((gpio_num_t)BUTTON_PIN);
+#else
+  esp_sleep_enable_ext0_wakeup((gpio_num_t)BUTTON_PIN, 0); // wake on LOW
   rtc_gpio_pullup_en((gpio_num_t)BUTTON_PIN);
   rtc_gpio_pulldown_dis((gpio_num_t)BUTTON_PIN);
+#endif
+#else
+#ifdef BUTTON_ACTIVE_HIGH
+  esp_deep_sleep_enable_gpio_wakeup((1ULL << BUTTON_PIN), ESP_GPIO_WAKEUP_GPIO_HIGH);
 #else
   esp_deep_sleep_enable_gpio_wakeup((1ULL << BUTTON_PIN), ESP_GPIO_WAKEUP_GPIO_LOW);
+#endif
 #endif
   esp_deep_sleep_start();
 }
@@ -154,14 +178,14 @@ void setup(void)
 {
   Serial.begin(115200);
   // Serial.end();
-  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  pinMode(BUTTON_PIN, buttonPinMode);
   pinMode(BUTTON_LED_PIN, OUTPUT);
-  pinMode(MENU_PIN, INPUT_PULLUP);
+  pinMode(MENU_PIN, buttonPinMode);
   pinMode(MENU_LED_PIN, OUTPUT);
 
   // Both buttos sharing the same config. Therefore we need to set the features etc only once.
-  button.init((uint8_t)BUTTON_PIN, HIGH, 1);
-  menuButton.init((uint8_t)MENU_PIN, HIGH, 2);
+  button.init((uint8_t)BUTTON_PIN, buttonIdleState, 1);
+  menuButton.init((uint8_t)MENU_PIN, buttonIdleState, 2);
   button.setEventHandler(handleButton);
   button.getButtonConfig()->setFeature(AceButton::kEventClicked);
   button.getButtonConfig()->setFeature(AceButton::kEventLongPressed);

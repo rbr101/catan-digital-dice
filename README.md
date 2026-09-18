@@ -112,20 +112,29 @@ No setup, no headaches.
 
 Alternative build on a generic ESP32-WROOM-32 dev board (e.g. AZ-Delivery DevKit V4) with a
 1.3" 240×240 ST7789 SPI display, instead of the ESP32-C3 Super Mini enclosure above. Use
-`pio run -e esp32dev` to build/upload this variant. Buttons here have no LED, so the
-`BUTTON_LED_PIN`/`MENU_LED_PIN` GPIOs are defined in `platformio.ini` but left unconnected.
+`pio run -e esp32dev` to build/upload this variant.
 
-| Component            | Connection To | Notes                                              |
-|-----------------------|---------------|-----------------------------------------------------|
-| Display SCLK          | `GPIO14`      |                                                       |
-| Display MOSI          | `GPIO4`       |                                                       |
-| Display DC            | `GPIO16`      |                                                       |
-| Display RST            | `GPIO13`      |                                                       |
-| Display Backlight      | `GPIO12`      |                                                       |
-| Display CS             | not wired     | Tied low on the panel's own breakout board            |
-| Display VCC / GND      | `3V3` / `GND` | Wired directly to the rail, not switched via GPIO     |
-| Main Button (switch)  | `GPIO32`      | Other leg to `GND`; triggers dice roll                |
-| Menu Button (switch)  | `GPIO25`      | Other leg to `GND`; opens settings/menu                |
+The buttons here are 3-pin modules (`+` / `GND` / `IO`), not bare 2-pin switches, and have
+no LED, so the `BUTTON_LED_PIN`/`MENU_LED_PIN` GPIOs are defined in `platformio.ini` but
+left unconnected. These modules idle LOW and drive their `IO` pin HIGH when pressed (the
+opposite of the enclosure build's switch-to-GND wiring), which is why this env also sets
+`-DBUTTON_ACTIVE_HIGH=1` - remove that flag if your buttons behave the other way around.
+
+| Component               | Connection To | Notes                                                    |
+|--------------------------|---------------|------------------------------------------------------------|
+| Display SCLK             | `GPIO14`      |                                                              |
+| Display MOSI             | `GPIO4`       |                                                              |
+| Display DC               | `GPIO16`      |                                                              |
+| Display RST              | `GPIO13`      |                                                              |
+| Display Backlight        | `GPIO12`      |                                                              |
+| Display CS               | not wired     | Tied low on the panel's own breakout board                  |
+| Display VCC / GND        | `3V3` / `GND` | Wired directly to the rail, not switched via GPIO            |
+| Main Button `+`          | `3V3`         |                                                              |
+| Main Button `GND`        | `GND`         |                                                              |
+| Main Button `IO`         | `GPIO32`      | Triggers dice roll                                           |
+| Menu Button `+`          | `3V3`         |                                                              |
+| Menu Button `GND`        | `GND`         |                                                              |
+| Menu Button `IO`         | `GPIO25`      | Opens settings/menu                                          |
 | Battery Voltage Divider (optional) | `GPIO34` | Only needed if you wire up a TP4056 + divider like the enclosure build |
 
 To change any of these, edit the matching `-D<NAME>=<gpio>` line in the `[env:esp32dev]`
